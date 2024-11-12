@@ -6,9 +6,9 @@
 **Justificativa:** O código JavaScript atual mistura a lógica da interface do usuário com a lógica de negócios, tornando-o difícil de manter e testar.  
 **Padrão de Projeto:** MVC (Model-View-Controller)  
 **Implementação:** Separe a lógica de controle e manipulação de dados em um objeto de controlador, mantendo a interface do usuário em um módulo separado.
-- **Model:** Representa o estado do jogo (posição dos jogadores, vencedor, etc.)
-- **View:** Responsável pela interface gráfica (HTML/CSS).
-- **Controller:** Lida com a lógica do jogo (interações do usuário).
+- **Model:** Responsável por armazenar o estado do jogo e a lógica central, como alternância de jogadores e checagem de vitória.
+- **View:** Manipula a exibição e atualizações na interface do usuário, separando a interação com o DOM da lógica de jogo.
+- **Controller:** Interpreta ações do usuário, manipulando a lógica do jogo e atualizando a interface.
 ### Protótipo de Código:
 ```javascript
 // model.js
@@ -101,10 +101,10 @@ controller.view.update(game.board, game.currentPlayer, game.winner);
 ```
 ---
 
-### 2. Melhorar a Legibilidade do Código
+### 2. Melhorar a Legibilidade do Código com Observer
 **Justificativa:** O uso de muitos IDs de elementos e a manipulação direta do DOM tornam o código confuso.  
 **Padrão de Projeto:** Observer  
-**Implementação:** Utilize um padrão Observer para atualizar a interface do usuário sempre que o estado do jogo mudar.
+**Implementação:** Utilize um padrão Observer para atualizar a interface do usuário sempre que o estado do jogo mudar, automaticamente.
 ### Protótipo de Código:
 ```javascript
 // game.js (Model)
@@ -225,7 +225,7 @@ const result = validator.validate(board);
 ---
 
 ### 4. Uso de Enums para Jogadores
-**Justificativa:** Usar strings para identificar jogadores é propenso a erros e não é tipado.  
+**Justificativa:** Strings “mágicas” para representar jogadores são propensas a erros. Usar um Object.freeze cria uma enumeração clara e imutável em JavaScript. 
 **Padrão de Projeto:** Enum  
 **Implementação:** Em JavaScript, podemos usar Object.freeze() para criar uma enumeração segura.
 ### Protótipo de Código:
@@ -241,9 +241,9 @@ let currentPlayer = Player.X;
 ---
 
 ### 5. Música e Efeitos Sonoros
-**Justificativa:** O carregamento de arquivos de áudio deve ser feito de forma a não bloquear a inicialização da aplicação.  
+**Justificativa:** Evita múltiplas instâncias de gerenciadores de som e facilita o controle de efeitos sonoros.
 **Padrão de Projeto:** Singleton  
-**Implementação:** Usamos Object.freeze() para garantir que não haverá modificações no Singleton.
+**Implementação:** Object.freeze garante que uma instância única seja usada, controlando o acesso ao som.
 ### Protótipo de Código:
 ```javascript
 class SoundManager {
