@@ -47,7 +47,9 @@ class Game {
         this.winner = null;
     }
 }
+```
 
+```javascript
 // view.js
 class GameView {
     constructor(controller) {
@@ -71,7 +73,9 @@ class GameView {
             : `Player ${currentPlayer}'s turn`;
     }
 }
+```
 
+```javascript
 // controller.js
 class GameController {
     constructor(model, view) {
