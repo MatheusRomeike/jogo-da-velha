@@ -107,18 +107,87 @@ controller.view.update(game.board, game.currentPlayer, game.winner);
 **Implementação:** Utilize um padrão Observer para atualizar a interface do usuário sempre que o estado do jogo mudar.
 ### Protótipo de Código:
 ```javascript
-class GameView {
-    constructor(controller) {
-        this.controller = controller;
-        this.controller.subscribe(this);
+// game.js (Model)
+class Game {
+    constructor() {
+        this.board = Array(9).fill(null);
+        this.currentPlayer = Player.X;
+        this.winner = null;
+        this.subscribers = [];
     }
 
-    update() {
-        // Atualizar a interface do usuário com base no estado do jogo (vitória ou velha)
+    subscribe(observer) {
+        this.subscribers.push(observer);
+    }
+
+    notify() {
+        this.subscribers.forEach(observer => observer.update(this));
+    }
+
+    play(position) {
+        if (!this.board[position] && !this.winner) {
+            this.board[position] = this.currentPlayer;
+            this.winner = this.checkWinner();
+            if (!this.winner) this.currentPlayer = this.currentPlayer === Player.X ? Player.O : Player.X;
+            this.notify();  // Notifica as views sobre a mudança de estado
+        }
+    }
+
+    checkWinner() {
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+        for (const [a, b, c] of winPatterns) {
+            if (this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c]) {
+                return this.board[a];
+            }
+        }
+        return this.board.includes(null) ? null : 'Draw';
+    }
+
+    reset() {
+        this.board = Array(9).fill(null);
+        this.currentPlayer = Player.X;
+        this.winner = null;
+        this.notify();
     }
 }
 
-const gameView = new GameView(gameController);
+// gameView.js (View)
+class GameView {
+    constructor(game) {
+        this.game = game;
+        this.cells = document.querySelectorAll('.cell');
+        this.message = document.querySelector('.message');
+        this.restartButton = document.querySelector('.restart');
+        
+        this.game.subscribe(this);  // Inscreve a view para receber atualizações do game
+
+        this.cells.forEach((cell, index) => {
+            cell.addEventListener('click', () => this.game.play(index));
+        });
+        this.restartButton.addEventListener('click', () => this.game.reset());
+    }
+
+    update(game) {
+        // Atualiza as células com o estado atual do tabuleiro
+        this.cells.forEach((cell, index) => {
+            cell.textContent = game.board[index];
+        });
+
+        // Exibe uma mensagem sobre o estado atual (turno do jogador ou resultado)
+        this.message.textContent = game.winner 
+            ? (game.winner === 'Draw' ? 'It\'s a draw!' : `Player ${game.winner} wins!`)
+            : `Player ${game.currentPlayer}'s turn`;
+    }
+}
+
+// main.js
+const game = new Game();
+const gameView = new GameView(game);
+
 
 ```
 ---
