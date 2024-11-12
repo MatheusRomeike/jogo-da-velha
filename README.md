@@ -12,7 +12,6 @@
 ### Protótipo de Código:
 ```javascript
 // model.js
-// model.js
 class Game {
     constructor() {
         this.board = Array(9).fill(null);
