@@ -12,10 +12,11 @@
 ### Protótipo de Código:
 ```javascript
 // model.js
+// model.js
 class Game {
     constructor() {
         this.board = Array(9).fill(null);
-        this.currentPlayer = 'X';
+        this.currentPlayer = Player.X;
         this.winner = null;
     }
 
@@ -23,26 +24,77 @@ class Game {
         if (!this.board[position] && !this.winner) {
             this.board[position] = this.currentPlayer;
             this.winner = this.checkWinner();
-            this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+            if (!this.winner) this.currentPlayer = this.currentPlayer === Player.X ? Player.O : Player.X;
         }
     }
 
     checkWinner() {
-        // lógica para verificar o vencedor
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+        for (const [a, b, c] of winPatterns) {
+            if (this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c]) {
+                return this.board[a];
+            }
+        }
+        return this.board.includes(null) ? null : 'Draw';
+    }
+
+    reset() {
+        this.board = Array(9).fill(null);
+        this.currentPlayer = Player.X;
+        this.winner = null;
+    }
+}
+
+// view.js
+class GameView {
+    constructor(controller) {
+        this.controller = controller;
+        this.cells = document.querySelectorAll('.cell');
+        this.message = document.querySelector('.message');
+        this.restartButton = document.querySelector('.restart');
+
+        this.cells.forEach((cell, index) => {
+            cell.addEventListener('click', () => this.controller.handleCellClick(index));
+        });
+        this.restartButton.addEventListener('click', () => this.controller.handleRestart());
+    }
+
+    update(board, currentPlayer, winner) {
+        this.cells.forEach((cell, index) => {
+            cell.textContent = board[index];
+        });
+        this.message.textContent = winner 
+            ? (winner === 'Draw' ? 'It\'s a draw!' : `Player ${winner} wins!`)
+            : `Player ${currentPlayer}'s turn`;
     }
 }
 
 // controller.js
-const game = new Game();
-function handleCellClick(position) {
-    game.play(position);
-    updateView();
+class GameController {
+    constructor(model, view) {
+        this.model = model;
+        this.view = view;
+    }
+
+    handleCellClick(position) {
+        this.model.play(position);
+        this.view.update(this.model.board, this.model.currentPlayer, this.model.winner);
+    }
+
+    handleRestart() {
+        this.model.reset();
+        this.view.update(this.model.board, this.model.currentPlayer, this.model.winner);
+    }
 }
 
-// view.js
-function updateView() {
-    // lógica para atualizar a UI com base no estado do jogo (vitória ou velha)
-}
+const game = new Game();
+const controller = new GameController(game, new GameView(controller));
+controller.view.update(game.board, game.currentPlayer, game.winner);
+
 ```
 ---
 
@@ -71,17 +123,31 @@ const gameView = new GameView(gameController);
 ### 3. Validação de Vitória
 **Justificativa:** A lógica de validação de vitória está muito acoplada e não é fácil de entender ou modificar.  
 **Padrão de Projeto:** Strategy  
-**Implementação:** Separe a lógica de validação em diferentes estratégias que podem ser trocadas conforme necessário.
+**Implementação:** Separar a lógica de vitória em uma classe WinValidator permite testar e modificar a lógica de vitória de forma independente.
 ### Protótipo de Código:
 ```javascript
 class WinValidator {
+    constructor() {
+        this.winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+    }
+
     validate(board) {
-        // Implementar lógica de validação
+        for (const [a, b, c] of this.winPatterns) {
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                return board[a];
+            }
+        }
+        return board.includes(null) ? null : 'Draw';
     }
 }
 
 const validator = new WinValidator();
-const hasWon = validator.validate(listaValores);
+const result = validator.validate(board);
+
 
 ```
 ---
@@ -89,13 +155,13 @@ const hasWon = validator.validate(listaValores);
 ### 4. Uso de Enums para Jogadores
 **Justificativa:** Usar strings para identificar jogadores é propenso a erros e não é tipado.  
 **Padrão de Projeto:** Enum  
-**Implementação:** Use enums para representar os jogadores 'X' e 'O'.
+**Implementação:** Em JavaScript, podemos usar Object.freeze() para criar uma enumeração segura.
 ### Protótipo de Código:
 ```javascript
-const Player = {
+const Player = Object.freeze({
     X: 'X',
     O: 'O'
-};
+});
 
 let currentPlayer = Player.X;
 
@@ -105,18 +171,16 @@ let currentPlayer = Player.X;
 ### 5. Música e Efeitos Sonoros
 **Justificativa:** O carregamento de arquivos de áudio deve ser feito de forma a não bloquear a inicialização da aplicação.  
 **Padrão de Projeto:** Singleton  
-**Implementação:** Crie uma classe Singleton para gerenciar o carregamento e a reprodução de sons.
+**Implementação:** Usamos Object.freeze() para garantir que não haverá modificações no Singleton.
 ### Protótipo de Código:
 ```javascript
 class SoundManager {
-    static instance;
-
     constructor() {
-        if (SoundManager.instance) {
-            return SoundManager.instance;
+        if (!SoundManager.instance) {
+            this.audio = new Audio();
+            SoundManager.instance = this;
         }
-        this.audio = new Audio();
-        SoundManager.instance = this;
+        return SoundManager.instance;
     }
 
     playSound(soundFile) {
@@ -125,6 +189,7 @@ class SoundManager {
     }
 }
 
-const soundManager = new SoundManager();
-soundManager.playSound('../audio/vitoria.mp3');
+const soundManager = Object.freeze(new SoundManager());
+soundManager.playSound('path/to/sound.mp3');
+
 ```
